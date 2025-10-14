@@ -1,0 +1,1949 @@
+{
+  "name": "01. Notion -> Blog -> Social Media",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "event": "pagedUpdatedInDatabase",
+        "databaseId": {
+          "__rl": true,
+          "value": "27ab17b4-501e-8074-9675-d51eb2336a57",
+          "mode": "list",
+          "cachedResultName": "Blog & Video Hub [PT]",
+          "cachedResultUrl": "https://www.notion.so/27ab17b4501e80749675d51eb2336a57"
+        },
+        "simple": false
+      },
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        64
+      ],
+      "id": "32351d88-03b5-4c3c-95aa-ebc409c5e4af",
+      "name": "Notion Trigger",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        224
+      ],
+      "id": "06444b64-a6d8-48a4-a6d3-b6fd8382d361",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "IM9bS9Hd19Gum4tm",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "dorusto@gmail.com",
+        "subject": "Articol generat de AI",
+        "message": "={{ $json.data }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3616,
+        272
+      ],
+      "id": "2ac6fe33-94ad-4799-abbf-a5736f19f44b",
+      "name": "Send a message",
+      "webhookId": "26f17b5b-4e10-497f-be04-2f4b57864345",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "J6xvXhUMcovgUaDp",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "operation": "getAll",
+        "blockId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "returnAll": true,
+        "fetchNestedBlocks": true,
+        "simplifyOutput": false
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        48
+      ],
+      "id": "b157f00b-5591-415d-8715-f353e5f4a5e7",
+      "name": "Get Content",
+      "alwaysOutputData": false,
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const optimizedText = $json.optimized_text;\n\n// Împarte textul în blocuri pe baza titlurilor, listelor și paragrafelor.\nconst blocks = optimizedText.split(/^(#+ .+\\n\\n)|(\\n\\n)|(^- .+\\n)|(^\\d+\\. .+\\n)/gm).filter(Boolean);\n\nconst notionBlocks = blocks.map(block => {\n  if (!block || block.trim().length === 0) {\n    return null; \n  }\n\n  const cleanBlock = block.trim();\n\n  // HEADING 1, 2, 3\n  if (cleanBlock.startsWith('# ')) {\n    return { \"type\": \"heading_1\", \"heading_1\": { \"rich_text\": [ { \"text\": { \"content\": cleanBlock.replace('# ', '').trim() } } ] } };\n  } else if (cleanBlock.startsWith('## ')) {\n    return { \"type\": \"heading_2\", \"heading_2\": { \"rich_text\": [ { \"text\": { \"content\": cleanBlock.replace('## ', '').trim() } } ] } };\n  } else if (cleanBlock.startsWith('### ')) {\n    return { \"type\": \"heading_3\", \"heading_3\": { \"rich_text\": [ { \"text\": { \"content\": cleanBlock.replace('### ', '').trim() } } ] } };\n  } \n  // BULLETED LIST\n  else if (cleanBlock.startsWith('- ')) {\n    return { \"type\": \"bulleted_list_item\", \"bulleted_list_item\": { \"rich_text\": [ { \"text\": { \"content\": cleanBlock.replace('-', '').trim() } } ] } };\n  } \n  // NUMBERED LIST\n  else if (cleanBlock.match(/^\\d+\\. /)) {\n    return { \"type\": \"numbered_list_item\", \"numbered_list_item\": { \"rich_text\": [ { \"text\": { \"content\": cleanBlock.replace(/^\\s*\\d+[.).]\\s*/, '').trim() } } ] } };\n  } \n  // PARAGRAPH (Fallback)\n  else {\n    return { \"type\": \"paragraph\", \"paragraph\": { \"rich_text\": [ { \"text\": { \"content\": cleanBlock } } ] } };\n  }\n}).filter(Boolean); \n\n\n// NOU: CONSOLIDEAZĂ ȘI STRINGIFY\n// -------------------------------------------------------------------\n\n// 1. Construim Body-ul JSON final (care include array-ul de blocuri)\nconst finalBody = {\n    \"children\": notionBlocks // notionBlocks este array-ul cu toate cele 42 de blocuri\n};\n\n// 2. Returnăm un singur item care conține Body-ul stringified (gata de HTTP Request)\nreturn [\n    {\n        json: {\n            // Body-ul JSON COMPLET, ca string\n            bodyString: JSON.stringify(finalBody)\n        }\n    }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        48
+      ],
+      "id": "9fc5f64b-7752-436b-a88f-7af3eed2e180",
+      "name": "Optimization for Notion"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Notion Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Focus Keyphrase|rich_text",
+              "textContent": "={{ $('Parse text String to JSON').item.json.focus_keyphrase }}"
+            },
+            {
+              "key": "Meta Description|rich_text",
+              "textContent": "={{ $('Parse text String to JSON').item.json.meta_description }}"
+            },
+            {
+              "key": "SEO Title|rich_text",
+              "textContent": "={{ $('Parse text String to JSON').item.json.seo_title }}"
+            },
+            {
+              "key": "Tags|multi_select",
+              "multiSelectValue": "={{ $('Parse text String to JSON').item.json.keywords }}"
+            },
+            {
+              "key": "Social Hook|rich_text",
+              "textContent": "={{ $('Parse text String to JSON').item.json.social_hook }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1376,
+        288
+      ],
+      "id": "ce8d7e66-b548-4b2f-80e4-979af678ea43",
+      "name": "Update Database Properties",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3efa35dc-63fd-4802-8fb7-a8597da4dfb9",
+              "leftValue": "={{ $json.properties.Status.select.name }}",
+              "rightValue": "=Ready to Publish",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        464
+      ],
+      "id": "d5055ee8-1339-43be-878b-361c7027b99c",
+      "name": "Ready to Publish?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "175f1cdc-87b9-4c70-bd9b-7dc1c521c38f",
+              "leftValue": "={{ $json.properties.Status.select.name }}",
+              "rightValue": "Ready for AI",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        64
+      ],
+      "id": "f9f7154a-3916-4e79-bcc7-f0ac8b84bf73",
+      "name": "Ready for AI?"
+    },
+    {
+      "parameters": {
+        "title": "={{ $json.title }}",
+        "additionalFields": {
+          "content": "={{ $json.content }}",
+          "slug": "={{ $json.focus_keyphrase }}",
+          "status": "publish"
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        256,
+        1056
+      ],
+      "id": "60319de6-5c97-4a48-b42a-4fa08f1ccef6",
+      "name": "Create a post",
+      "credentials": {
+        "wordpressApi": {
+          "id": "lzcpahZm5AzNKxIn",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "dall-e-2",
+        "prompt": "=Imagine cinematică care ilustrează tema: {{ $json.focus_keyphrase }}. Stil realist, compoziție clară, culori calde.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2160,
+        48
+      ],
+      "id": "bc57f577-c7ae-4b41-b604-4d1af9b3999f",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": "IM9bS9Hd19Gum4tm",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/posts/' + $('Create a post').item.json.id}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"featured_media\": \"{{ $('Upload Featured Image').item.json.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        1040
+      ],
+      "id": "6a20b435-6a00-4f5f-ae37-bd92e04b4142",
+      "name": "Set Featured Image",
+      "credentials": {
+        "wordpressApi": {
+          "id": "lzcpahZm5AzNKxIn",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/media'}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename=\"featured_image_{{ $('Create a post').item.json.id }}.png\""
+            },
+            {
+              "name": "Content-Type",
+              "value": "image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        1040
+      ],
+      "id": "cf6b8a0d-9fe9-4c79-b90e-eb38eefae49d",
+      "name": "Upload Featured Image",
+      "credentials": {
+        "wordpressApi": {
+          "id": "lzcpahZm5AzNKxIn",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/posts/' +$json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"meta_input\": {\n    \"_yoast_wpseo_title\": \"{{ $('Extract NotionDoc Properties').item.json.seo_title }}\",\n    \"_yoast_wpseo_metadesc\": \"{{ $('Extract NotionDoc Properties').item.json.meta_description }}\",\n    \"_yoast_wpseo_focuskw\": \"{{ $('Extract NotionDoc Properties').item.json.focus_keyphrase }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        848,
+        768
+      ],
+      "id": "9dda301d-d96a-4b29-871d-daf7155fc355",
+      "name": "Add Metadata",
+      "credentials": {
+        "wordpressApi": {
+          "id": "lzcpahZm5AzNKxIn",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7f4c5019-2ff3-49d9-8f45-5e93f49bc236",
+              "name": "social_text",
+              "value": "={{ \"Tocmai am publicat: \" + $('Create a post').item.json.title.raw + \"\\n\\n\" + $('Extract NotionDoc Properties').item.json.social_hook + \"\\n\\nCiteste pe: \" + $('Create a post').item.json.link }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        1040
+      ],
+      "id": "7e77fd83-ddd1-4d93-be5d-7ac3607b364b",
+      "name": "Prepare Social Text"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.optimized_text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        3408,
+        272
+      ],
+      "id": "eb78ba66-1354-4dab-92c1-f4f7bad7803d",
+      "name": "Convert Markdown to HTML"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "=me",
+        "edge": "feed",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "message",
+                "value": "={{ $json.social_text }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        1040
+      ],
+      "id": "ca0c1eec-d68f-4f36-8749-edf58edee89f",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "5lP0VpFRJ1ok0kka",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/media'}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename=\"featured_image_{{ $('Notion Trigger').item.json.id }}.jpg\""
+            },
+            {
+              "name": "Content-Type",
+              "value": "image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        1248
+      ],
+      "id": "07f34a9f-c44d-4356-8eab-d6a80e3957a0",
+      "name": "Upload photo on WP",
+      "credentials": {
+        "wordpressApi": {
+          "id": "lzcpahZm5AzNKxIn",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Notion Trigger').item.json.properties['URL Image'].url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2544,
+        128
+      ],
+      "id": "18700ac8-7d1a-4393-b51a-dfe17f23bc8e",
+      "name": "Copy the Image"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/posts/' + $('Create a post').item.json.id}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"featured_media\": \"{{ $('Upload photo on WP').item.json.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        1248
+      ],
+      "id": "ad579134-3e37-444b-b5ca-711189f9f0c8",
+      "name": "Set Featured Image1",
+      "credentials": {
+        "wordpressApi": {
+          "id": "lzcpahZm5AzNKxIn",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Upload the picture in WP",
+        "height": 464,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        960
+      ],
+      "id": "728e6d67-5baf-41d9-b297-10192f308c16",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7f4c5019-2ff3-49d9-8f45-5e93f49bc236",
+              "name": "social_text",
+              "value": "={{ \"Tocmai am publicat: \" + $('Create a post').item.json.title.raw + \"\\n\\n\" + $('Extract NotionDoc Properties').item.json.social_hook + \"\\n\\nCiteste pe: \" + $('Create a post').item.json.link }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        1248
+      ],
+      "id": "6f7219b2-4e30-40f9-9b77-f4ef0b9aa783",
+      "name": "Prepare Social Text1"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "=me",
+        "edge": "feed",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "message",
+                "value": "={{ $json.social_text }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        1248
+      ],
+      "id": "abbfba3d-316e-403f-9778-66d98c8ed5a9",
+      "name": "Facebook Graph API1",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "5lP0VpFRJ1ok0kka",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Upload the social hook to facebook",
+        "height": 464,
+        "width": 720
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        960
+      ],
+      "id": "371063d4-f92b-4717-985f-833208da259a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Append metadata to WP\n- add meta description\n- add focus keywords\n\nYOAST sau Rank Math API not working.\n\nFind a fix or work around.\n",
+        "height": 352,
+        "width": 624,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        576
+      ],
+      "id": "bf65cb21-2f8b-4e7c-87d1-4c05032c8a14",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Update Wordpress",
+        "height": 1040,
+        "width": 816
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        384
+      ],
+      "id": "ec1200f9-5a6a-48aa-8e9f-9ac02c41e4c6",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Acționează ca un editor de conținut și expert SEO.\n\nMisiunea ta este:\n\n1. **Păstrează vocea autorului** – menține tonul personal și autentic al poveștii, ca și cum ar fi spus de autor.\n2. **Transformă mesajul** – dacă textul transmite victimizare, rescrie-l într-o manieră constructivă, optimistă și orientată spre soluții, astfel încât cititorul să se simtă încurajat și inspirat. Vulnerabilitatea trebuie păstrată, dar finalul și concluziile să transmită speranță și valoare.\n3. **Optimizează pentru SEO** \n\n   * Formatează textul în Markdown.\n   * Adaugă subtitluri (headings) pentru organizarea ideilor.\n   * Corectează greșelile gramaticale și de punctuație.\n   * Îmbunătățește claritatea și fluiditatea exprimării, fără a transforma textul într-un articol generic.\n\nLa final:\n\n* Generează 5-7 **cuvinte cheie** relevante, separate prin virgulă.\n* Creează o **focus keyphrase** bazată pe subiectul principal al textului.\n* Scrie un **titlu SEO** optimizat (maxim 60 de caractere).\n* Scrie o **meta descriere** concisă și atrăgătoare (maxim 160 de caractere).\n* **Creează un 'social hook'** - un text de maxim 280 de caractere, ideal pentru o postare pe Facebook sau LinkedIn, care să fie incitant și să includă un apel la acțiune (CTA) subtil pentru a citi articolul.\n\n\nReturnează rezultatul într-un singur bloc de cod JSON, care va conține câmpurile:\n\n* `keywords`\n* `focus_keyphrase`\n* `seo_title`\n* `meta_description`\n* **`social_hook`**\n* `optimized_text` (unde `optimized_text` va conține întregul text formatat în Markdown).\n\n**Textul de analizat:**\n\n{{ $json.content }}  \n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1024,
+        48
+      ],
+      "id": "6acbbb05-7144-48e7-804a-823272ae38e9",
+      "name": "GPT5 Copyrighter"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $json;\nconst pageProperties = item.properties;\n\n// Funcție ajutătoare pentru extragerea textului din proprietățile de tip Rich Text/Title\nconst getPlainText = (property) => {\n    // Adaugă o verificare inițială pentru a preveni erorile dacă proprietatea lipsește\n    if (!property) {\n        return '';\n    }\n    \n    // Verifică dacă proprietatea are câmpuri title sau rich_text\n    if (property.title && property.title.length > 0) {\n        return property.title[0].plain_text;\n    }\n    if (property.rich_text && property.rich_text.length > 0) {\n        return property.rich_text[0].plain_text;\n    }\n    return '';\n};\n\n// Extragerea proprietăților Rich Text (Titlu, Descriere, Keyphrase)\nconst seoTitle = getPlainText(pageProperties['SEO Title']);\nconst metaDescription = getPlainText(pageProperties['Meta Description']);\nconst focusKeyphrase = getPlainText(pageProperties['Focus Keyphrase']);\nconst socialHook = getPlainText(pageProperties['Social Hook']);\n\n// Extragerea URL-ului imaginii din proprietatea 'URL Image'\nlet imageUrl = '';\nconst urlProperty = pageProperties['URL Image'];\n\n// Verifică dacă proprietatea URL există și are o valoare\nif (urlProperty && urlProperty.url) {\n    imageUrl = urlProperty.url;\n}\n\n// --- Extragerea și formatarea Tag-urilor (Multi-select) ---\n// Extrage lista de obiecte tag din structura Notion.\nconst tagsArray = pageProperties.Tags.multi_select; // Această linie lipsea!\n\n// Creează un ARRAY de string-uri (Numele tagurilor) pentru a fi trimise către WordPress\nconst keywordsString = tagsArray.map(tag => tag.name).join(','); // FĂRĂ spațiu\n \n\n// Extragem URL-ul paginii\nconst pageUrl = item.url;\n\n// Returnăm un obiect JSON curat cu proprietățile extrase\nreturn [\n  {\n    json: {\n      seo_title: seoTitle,\n      meta_description: metaDescription,\n      focus_keyphrase: focusKeyphrase,\n      keywords: keywordsString, // Trimitem ARRAY-ul\n      notion_page_url: pageUrl,\n      social_hook: socialHook,\n      image_url: imageUrl \n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        448
+      ],
+      "id": "bad7f4b2-d2f9-48ad-affd-43ec8914c20a",
+      "name": "Extract NotionDoc Properties"
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "operation": "getAll",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ $('Notion Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "fetchNestedBlocks": true,
+        "simplifyOutput": false
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        448
+      ],
+      "id": "0a2d35fd-58e9-49e5-a367-0254660f7dfa",
+      "name": "Get the article",
+      "alwaysOutputData": false,
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "blocks",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        0,
+        688
+      ],
+      "id": "3fb83ad0-f3fe-4425-a298-ee605f68d5f0",
+      "name": "Aggregate data"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        496,
+        688
+      ],
+      "id": "f007b4a8-abc7-40f0-9822-3cd3c9ec33e9",
+      "name": "Markdown to HTML"
+    },
+    {
+      "parameters": {
+        "content": "## Send the article to Email\n- Add condition in Notion if the user want to review in email.",
+        "height": 288,
+        "width": 496
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3328,
+        176
+      ],
+      "id": "26dd2de5-4479-4b9d-8081-3ec0c5fd629a",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.text;\n\n// Regex pentru a extrage JSON dintr-un bloc ```json ... ```\nconst jsonRegex = /```json\\s*([\\s\\S]*?)\\s*```/;\nconst match = jsonRegex.exec(text);\n\n// Dacă există bloc de cod, iau doar interiorul, altfel iau tot textul\nlet jsonString = match ? match[1] : text;\n\ntry {\n  const parsedJson = JSON.parse(jsonString);\n  return [\n    {\n      json: parsedJson\n    }\n  ];\n} catch (e) {\n  console.error(\"Eroare la parsarea JSON:\", e.message);\n  return [\n    {\n      json: {}\n    }\n  ];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        48
+      ],
+      "id": "50cc2d89-5139-4d43-964e-619c25ffbb8a",
+      "name": "Parse text String to JSON"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "blocks",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        608,
+        48
+      ],
+      "id": "5d85f5f8-6da3-44cf-aca0-a96344c69356",
+      "name": "Aggregate Blocks to one block"
+    },
+    {
+      "parameters": {
+        "jsCode": "const blocks = $json.blocks;\n\n// Funcție recursivă pentru a extrage textul din blocuri, inclusiv cele imbricate\nconst extractTextFromBlocks = (blockArray) => {\n  return blockArray.map(block => {\n    const blockType = block.type;\n    let plainText = '';\n\n    // Extrage textul din blocurile cu proprietatea 'text'\n    if (block[blockType] && block[blockType].text && block[blockType].text.length > 0) {\n      plainText = block[blockType].text.map(item => item.plain_text).join('');\n    }\n\n    // Procesează blocurile 'to_do' și 'toggle'\n    if (block.type === 'to_do' && block.to_do.text) {\n        plainText = block.to_do.text.map(item => item.plain_text).join('');\n    } else if (block.type === 'toggle' && block.toggle.text) {\n        plainText = block.toggle.text.map(item => item.plain_text).join('');\n    }\n\n    // Verifică blocurile copil pentru conținut imbricat\n    let childText = '';\n    if (block[blockType] && block[blockType].children && block[blockType].children.length > 0) {\n      childText = extractTextFromBlocks(block[blockType].children).join('\\n\\n');\n    }\n\n    // Formatează textul extras și îl returnează\n    switch (blockType) {\n      case 'heading_1':\n      case 'heading_2':\n      case 'heading_3':\n        return `### ${plainText}\\n${childText}`;\n      case 'paragraph':\n      case 'bulleted_list_item':\n      case 'numbered_list_item':\n      case 'callout':\n      case 'quote':\n      case 'to_do':\n      case 'toggle':\n        return `${plainText}\\n${childText}`;\n      case 'divider':\n        return '---';\n      case 'image':\n        return '[imagine]';\n      case 'child_page':\n        return `[link către pagina copil: ${plainText}]`;\n      default:\n        console.warn(`Tip de bloc neprocesat: ${blockType}`);\n        return '';\n    }\n  }).filter(Boolean).join('\\n\\n');\n};\n\nconst textContent = extractTextFromBlocks(blocks);\n\nreturn [\n  {\n    json: {\n      content: textContent,\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        48
+      ],
+      "id": "520f7f30-7d76-4102-9eef-a4b6523660b3",
+      "name": "Extract Content from block to MD"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "452d90dd-4e2f-44f7-b038-d3bb5924a650"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "12b44e52-7b28-4104-b4ff-2f55dc6bff21",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        2608,
+        1136
+      ],
+      "id": "7cfe299f-2ada-4109-873a-1113766b4368",
+      "name": "Publisher router"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        1024
+      ],
+      "id": "0f3c4b77-7a66-44b8-b2dc-ba765abaa807",
+      "name": "Create Tweet"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        2832,
+        1216
+      ],
+      "id": "496c7558-53d9-4814-ba67-1f574db4273c",
+      "name": "Create a LinkedIn post"
+    },
+    {
+      "parameters": {
+        "content": "## TO DO\n- put content to more social media",
+        "height": 464,
+        "width": 480,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2576,
+        944
+      ],
+      "id": "27d9f540-d43c-450c-a6ec-f251371c53e9",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## TO DO for video content long\n- create script for video\n- create shot list for video\n- share on YouTube or other long video content",
+        "height": 208,
+        "width": 480,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        944
+      ],
+      "id": "dacd19b6-84e4-4710-909e-bf1f18bb5e58",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## TO DO for video content shorts\n- create shorts from the long video\n- share on TikTok or other shorts video platforms",
+        "height": 224,
+        "width": 480,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        1184
+      ],
+      "id": "5d6cdec3-bdf0-4ce9-ba13-55a802aa7dda",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## TO DO\n- **Add to do list**",
+        "height": 144,
+        "width": 352,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2896,
+        768
+      ],
+      "id": "e125e37e-74de-498d-8d2a-8b55c340356f",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Missing image from the social post\n- to be added",
+        "height": 144,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        784
+      ],
+      "id": "82cd6026-5df4-4c56-b515-35ac24afb6ec",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "jsCode": "const blocks = $json.blocks;\n\n// Funcție recursivă pentru a extrage textul din blocuri, inclusiv cele imbricate\nconst extractTextFromBlocks = (blockArray) => {\n  return blockArray.map(block => {\n    // Definirea variabilei blockType ESTE NECESARĂ ÎN ACEST SCOPE (la fiecare iterație)\n    const blockType = block.type; \n    let plainText = '';\n\n    // Extrage textul din blocurile cu proprietatea 'text'\n    if (block[blockType] && block[blockType].text && block[blockType].text.length > 0) {\n      plainText = block[blockType].text.map(item => item.plain_text).join('');\n    }\n\n    // Procesează blocurile 'to_do' și 'toggle'\n    if (block.type === 'to_do' && block.to_do.text) {\n        plainText = block.to_do.text.map(item => item.plain_text).join('');\n    } else if (block.type === 'toggle' && block.toggle.text) {\n        plainText = block.toggle.text.map(item => item.plain_text).join('');\n    }\n\n    // Verifică blocurile copil pentru conținut imbricat\n    let childText = '';\n    if (block[blockType] && block[blockType].children && block[blockType].children.length > 0) {\n      childText = extractTextFromBlocks(block[blockType].children).join('\\n\\n');\n    }\n\n    // Formatează textul extras și îl returnează (ACUM CU MARCATORI MARKDOWN PENTRU LISTE)\n    switch (blockType) {\n      case 'heading_1':\n        return `# ${plainText}\\n${childText}`;\n      case 'heading_2':\n        return `## ${plainText}\\n${childText}`;\n      case 'heading_3':\n        return `### ${plainText}\\n${childText}`;\n      case 'bulleted_list_item':\n        return `* ${plainText}\\n${childText}`; // Bullet point\n      case 'numbered_list_item':\n        return `1. ${plainText}\\n${childText}`; // Listă numerotată\n      case 'paragraph':\n        return `${plainText}\\n${childText}`;\n      case 'callout':\n      case 'quote':\n        return `> ${plainText}\\n${childText}`; // Blockquote\n      case 'to_do':\n        const isChecked = block.to_do.checked;\n        const todoMarker = isChecked ? '- [x] ' : '- [ ] ';\n        return `${todoMarker}${plainText}\\n${childText}`;\n      case 'toggle':\n        return `${plainText}\\n${childText}`;\n      case 'divider':\n        return '---';\n      case 'image':\n        return '[imagine]';\n      case 'child_page':\n        return `[link către pagina copil: ${plainText}]`;\n      default:\n        console.warn(`Tip de bloc neprocesat: ${blockType}`);\n        return '';\n    }\n  }).filter(Boolean).join('\\n\\n');\n};\n\nconst textContent = extractTextFromBlocks(blocks);\n\nreturn [\n  {\n    json: {\n      content: textContent,\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        688
+      ],
+      "id": "58dbd940-0083-4ec2-84c6-ee63b3a7337d",
+      "name": "Extract Content for WP"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3857fa37-cfaf-4fb1-9f38-56db8b5915fe",
+              "name": "title",
+              "value": "={{ $('Extract NotionDoc Properties').item.json.seo_title }}",
+              "type": "string"
+            },
+            {
+              "id": "e87f5800-bef4-484d-8d9b-d436dbf7db0b",
+              "name": "keywords",
+              "value": "={{ $('Extract NotionDoc Properties').item.json.keywords }}",
+              "type": "string"
+            },
+            {
+              "id": "3afde044-9cc3-4d92-82ad-60bfb0420260",
+              "name": "meta_description",
+              "value": "={{ $('Extract NotionDoc Properties').item.json.meta_description }}",
+              "type": "string"
+            },
+            {
+              "id": "5f5e5766-9693-44f8-842c-4807210a9c72",
+              "name": "focus_keyphrase",
+              "value": "={{ $('Extract NotionDoc Properties').item.json.focus_keyphrase }}",
+              "type": "string"
+            },
+            {
+              "id": "4e0a3132-23a0-4bbb-a2bb-1b7a37dc263d",
+              "name": "content",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        960
+      ],
+      "id": "cb9e4644-6ebc-48f1-bda4-769052cb686d",
+      "name": "Prepare article"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/blocks/{{ $('Notion Trigger').item.json.id }}/children",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Optimization for Notion').item.json.bodyString }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1616,
+        288
+      ],
+      "id": "7695aefc-340b-4cbf-836d-6f525615d6de",
+      "name": "Send article to Notion",
+      "retryOnFail": false,
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Notion Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Ready for Review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        3088,
+        304
+      ],
+      "id": "bed49dbc-b4e2-4d77-ae2b-664961cbfdeb",
+      "name": "Ready for Review",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Notion Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Published"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1936,
+        1136
+      ],
+      "id": "c8565197-b14f-46c7-b30d-8783bb2e991f",
+      "name": "Published",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Receive the data from Notion",
+        "height": 368,
+        "width": 1040
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -16
+      ],
+      "id": "a3909fe1-b066-4d0d-be23-509322c2cf3a",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "## The Copyrighter",
+        "height": 368,
+        "width": 304
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        976,
+        -16
+      ],
+      "id": "5e10482a-23b0-46d3-b6e5-7fcb42463ea6",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a89641a9-82c6-4e3c-8cb7-4d49391b9a55",
+              "leftValue": "={{ $('Notion Trigger').item.json.properties[\"URL Image\"].url }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1904,
+        64
+      ],
+      "id": "af2c92f9-2137-40db-8c19-45c3ae28f8fd",
+      "name": "Article needs a Image?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/file_uploads",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2544,
+        288
+      ],
+      "id": "c4661997-d285-4507-a692-a3bcd083edf3",
+      "name": "1. Create File Upload Object",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.upload_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "=file",
+              "inputDataFieldName": "={{ $json.fileName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3088,
+        64
+      ],
+      "id": "fd0879c4-d8da-47bb-8db9-ce177ae29fe1",
+      "name": "2. Send File Content (Binary)",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2880,
+        64
+      ],
+      "id": "d61c676c-0aba-413e-8460-c6dabb5653bb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/blocks/{{ $('Notion Trigger').item.json.id }}/children",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"children\": [\n    {\n      \"type\": \"image\",\n      \"image\": {\n        \"type\": \"file_upload\",\n        \"file_upload\": {\n          \"id\": \"{{ $json.id }}\"\n        }\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2896,
+        304
+      ],
+      "id": "d3c30a4f-1daa-41b1-a35f-bc3dc934bad6",
+      "name": "Attach image to doc",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.upload_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "=file",
+              "inputDataFieldName": "={{ $json.fileName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        752
+      ],
+      "id": "b49669de-0ebd-412c-8a2b-9a6eb1e99c09",
+      "name": "2. Send File Content (Binary)2",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/blocks/{{ $('Notion Trigger').item.json.id }}/children",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"children\": [\n    {\n      \"type\": \"image\",\n      \"image\": {\n        \"type\": \"file_upload\",\n        \"file_upload\": {\n          \"id\": \"{{ $json.id }}\"\n        }\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3584,
+        752
+      ],
+      "id": "3d0d22bc-4e52-40e3-a5b8-e6894cab098f",
+      "name": "Attach image to doc2",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Notion Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Ready for Review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        304
+      ],
+      "id": "6e6cda72-e0ef-48e0-a839-200fd5f00571",
+      "name": "Ready for Review1",
+      "credentials": {
+        "notionApi": {
+          "id": "JEBP9PCcAl6KPP6D",
+          "name": "Notion to Blogsport"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Send the updates to the database",
+        "height": 480,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        -16
+      ],
+      "id": "b8904914-8438-4f78-ab41-5ed48fe28594",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "content": "## Generate the image and put the status ready for review",
+        "height": 480,
+        "width": 1472
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -16
+      ],
+      "id": "e11a0819-2c7e-4c7d-b180-e29f9d621e17",
+      "name": "Sticky Note14"
+    }
+  ],
+  "pinData": {
+    "GPT5 Copyrighter": [
+      {
+        "json": {
+          "text": "```json\n{\n  \"keywords\": \"bunăstare, sănătate fizică, gestionarea anxietății, dezvoltare personală, relații valoroase, finanțe personale, echilibru emoțional\",\n  \"focus_keyphrase\": \"focus pe bunăstare: sănătate, finanțe, relații și calm în fața anxietății\",\n  \"seo_title\": \"Focus pe bunăstare: Sănătate, Finanțe și Relații echilibrate\",\n  \"meta_description\": \"Descoperă cum să-ți crești încrederea și energia, gestionând anxietatea și concentrându-te pe sănătate, finanțe și relații valoroase.\",\n  \"social_hook\": \"Simți presiunea zilnică și anxietatea crescând? Află cum un focus autentic pe sănătate, finanțe și relații te poate aduce înapoi la echilibru și încredere. Hai să găsim împreună soluții practice, pas cu pas!\",\n  \"optimized_text\": \"### Focus pe bunăstare: sănătate, finanțe, relații și calm în fața anxietății\\n\\nAleg să-mi concentrez atenția asupra lucrurilor pe care le pot controla: corpul meu, finanțele, relațiile și activitățile care mă împlinesc cu adevărat. Această abordare îmi crește încrederea, claritatea și energia, construind o bază solidă în fiecare zi.\\n\\n---\\n\\n### Focus pe sănătatea fizică\\n\\nCând am grijă de corpul meu, mă simt mai puternic și încrezător. Beneficiul suplimentar este că mintea se liniștește: stresul și anxietatea scad, iar concentrarea devine mai ușoară.\\n\\n**Ce funcționează pentru mine:**\\n\\n- Mișcare zilnică de cel puțin 30 de minute (mers, alergare sau sală)\\n- Somn de 7–8 ore, cu o rutină simplă de seară\\n- Hidratare corespunzătoare și mese curate, echilibrate\\n\\n---\\n\\n### Focus pe bunăstarea financiară\\n\\nAm construit un plan de economisire care include un fond de urgență pentru minim 6 luni de cheltuieli, oferindu-mi un sentiment real de siguranță.\\n\\nPentru viitor, contribui constant într-un plan de investiții cu un orizont pe termen lung (10+ ani), automatizat pentru a nu depinde doar de o singură sursă de venit.\\n\\n---\\n\\n### Focus pe relații valoroase\\n\\nMă mențin aproape de familie și sunt prezent în relațiile importante.\\n\\nCaut compania oamenilor care au valori asemănătoare cu ale mele și învăț să închei politicos relațiile care mă consumă negativ, stabilind limite sănătoase.\\n\\n---\\n\\n### Focus pe lucruri care îmi aduc împlinire\\n\\nÎn loc să „vânez fericirea”, aleg să pun preț pe împlinire – o stare adâncă și durabilă.\\n\\n**Exemple:**\\n\\n- Dăruiesc timp sau resurse unor cauze în care cred\\n- Petrec vacanțe simple și autentice alături de familie\\n- Mă implic în proiecte care mă dezvoltă ca om și profesionist\\n\\n---\\n\\n### Când apare anxietatea: cum gestionez concret\\n\\nUneori apar valuri de neliniște și gânduri negative, dar am învățat să mă adaptez astfel:\\n\\n- Identific ce anume a declanșat starea și o conștientizez\\n- Mă calmez amintindu-mi că agitația scade claritatea\\n- Privesc situația cu obiectivitate și mă concentrez pe ce pot influența\\n\\n**Tehnici rapide pe care le aplic:**\\n\\n- Respirație 4-7-8 sau 4-4-6, încet, repetată de 5–7 ori\\n- „Stop gândului” și reîncadrare: care sunt dovezile? Ce alte explicații pot exista?\\n- Mini-jurnal: Ce simt? Ce pot controla acum? Care este primul pas?\\n- Regula de 1%: un progres mic, azi, este suficient\\n\\n---\\n\\n### Exemplu real: presiune la muncă și cum răspund\\n\\nAu fost momente când, indiferent cât de mult munceam, simțeam că șeful are o percepție negativă despre mine. Mintea a intrat în panică: „Nu am voie să greșesc, trebuie să fac totul mai repede.” Această stare m-a făcut să greșesc și mai mult.\\n\\n**Ce am schimbat:**\\n\\n- Am acceptat că nu pot controla părerea altcuiva, ci doar modul în care acționez și comunic\\n- Mi-am permis să fiu imperfect: greșelile sunt o sursă de învățare, nu etichete\\n- Am ales să pun accent pe calitate și claritate, nu pe viteză panicată\\n\\nAceastă schimbare m-a eliberat de stres și mi-a adus echilibru. Nu am mai dus tensiunea acasă și am dormit liniștit, știind că sunt un om bun, ambițios și în creștere constantă.\\n\\n---\\n\\n### Strategia mea de protecție și dezvoltare la job\\n\\n- Documentez totul: obiective, statusuri, rezultate (dovezi clare)\\n- Cer clarificări în scris și confirm întâlniri pe email\\n- Prioritizez sarcinile clar; spun „nu” cererilor nealiniate\\n- Cer feedback periodic și îl transform în acțiuni concrete\\n- Învăț continuu skillurile-cheie și am un plan pentru 30-60-90 zile\\n- Anticipez scenarii și pregătesc răspunsuri constructive\\n- Îmi actualizez CV-ul și testez piața discret pentru opțiuni\\n- Îmi protejez timpul, stabilind ore de lucru, pauze și limite sănătoase\\n- Caut sprijinul unui coleg de încredere, mentor sau consiliere atunci când este nevoie\\n\\nDeși situația nu e întotdeauna perfectă, rămân pentru că iubesc meseria, mă dezvolt emoțional și am un salariu acceptabil. Indiferent de rezultatul final, ies mai puternic și mai clar în privința mea.\\n\\n---\\n\\n### Ce am câștigat până acum\\n\\n- Mă simt mai sănătos de când fac sport constant\\n- Am un sentiment de siguranță financiară datorită economiilor\\n- Mă simt acceptat și înțeles când sunt înconjurat de oameni cu valori similare\\n- Simt împlinire când îmi canalizez energia pe ceea ce iubesc să fac\\n\\n---\\n\\n### Hai să vorbim\\n\\nDacă vrei să-ți îmbunătățești starea de bine, dar simți că există bariere greu de depășit, hai să discutăm. Lasă-mi un mesaj mai jos și poate găsim împreună o cale mai simplă și mai blândă către împlinirea ta.\"\n}\n```"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Notion Trigger": {
+      "main": [
+        [
+          {
+            "node": "Ready for AI?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "GPT5 Copyrighter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Get Content": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Blocks to one block",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Optimization for Notion": {
+      "main": [
+        [
+          {
+            "node": "Update Database Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Database Properties": {
+      "main": [
+        [
+          {
+            "node": "Send article to Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready to Publish?": {
+      "main": [
+        [
+          {
+            "node": "Extract NotionDoc Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready for AI?": {
+      "main": [
+        [
+          {
+            "node": "Get Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ready to Publish?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "Add Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "1. Create File Upload Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Featured Image": {
+      "main": [
+        [
+          {
+            "node": "Set Featured Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Metadata": {
+      "main": [
+        []
+      ]
+    },
+    "Set Featured Image": {
+      "main": [
+        [
+          {
+            "node": "Prepare Social Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Social Text": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy the Image": {
+      "main": [
+        []
+      ]
+    },
+    "Upload photo on WP": {
+      "main": [
+        [
+          {
+            "node": "Set Featured Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Featured Image1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Social Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Social Text1": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT5 Copyrighter": {
+      "main": [
+        [
+          {
+            "node": "Parse text String to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract NotionDoc Properties": {
+      "main": [
+        [
+          {
+            "node": "Get the article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the article": {
+      "main": [
+        [
+          {
+            "node": "Aggregate data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate data": {
+      "main": [
+        [
+          {
+            "node": "Extract Content for WP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Prepare article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse text String to JSON": {
+      "main": [
+        [
+          {
+            "node": "Optimization for Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Blocks to one block": {
+      "main": [
+        [
+          {
+            "node": "Extract Content from block to MD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Content from block to MD": {
+      "main": [
+        [
+          {
+            "node": "GPT5 Copyrighter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publisher router": {
+      "main": [
+        [
+          {
+            "node": "Create Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a LinkedIn post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Content for WP": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare article": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Graph API1": {
+      "main": [
+        [
+          {
+            "node": "Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Graph API": {
+      "main": [
+        [
+          {
+            "node": "Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send article to Notion": {
+      "main": [
+        [
+          {
+            "node": "Article needs a Image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Article needs a Image?": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ready for Review1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Create File Upload Object": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "2. Send File Content (Binary)": {
+      "main": [
+        [
+          {
+            "node": "Attach image to doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "2. Send File Content (Binary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Send File Content (Binary)2": {
+      "main": [
+        [
+          {
+            "node": "Attach image to doc2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach image to doc": {
+      "main": [
+        [
+          {
+            "node": "Ready for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b31c6442-e841-4e7a-98c6-5748cde160fa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5870fe1a67cc41128053003fe543e22c169dc78f349742803fde6379f61a6c2e"
+  },
+  "id": "GQAiZcUrdiPHJRG1",
+  "tags": []
+}
