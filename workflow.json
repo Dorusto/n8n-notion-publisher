@@ -49,7 +49,7 @@
       "typeVersion": 1.2,
       "position": [
         1088,
-        224
+        304
       ],
       "id": "06444b64-a6d8-48a4-a6d3-b6fd8382d361",
       "name": "OpenAI Chat Model",
@@ -72,8 +72,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3616,
-        272
+        3216,
+        592
       ],
       "id": "2ac6fe33-94ad-4799-abbf-a5736f19f44b",
       "name": "Send a message",
@@ -121,7 +121,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1600,
+        1616,
         48
       ],
       "id": "9fc5f64b-7752-436b-a88f-7af3eed2e180",
@@ -258,7 +258,7 @@
       "typeVersion": 1,
       "position": [
         256,
-        1056
+        976
       ],
       "id": "60319de6-5c97-4a48-b42a-4fa08f1ccef6",
       "name": "Create a post",
@@ -279,7 +279,7 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        2160,
+        2192,
         48
       ],
       "id": "bc57f577-c7ae-4b41-b604-4d1af9b3999f",
@@ -299,14 +299,14 @@
         "nodeCredentialType": "wordpressApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"featured_media\": \"{{ $('Upload Featured Image').item.json.id }}\"\n}",
+        "jsonBody": "={\n  \"featured_media\": {{ $('Upload Featured Image').item.json.id }}\n}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1232,
-        1040
+        1088,
+        976
       ],
       "id": "6a20b435-6a00-4f5f-ae37-bd92e04b4142",
       "name": "Set Featured Image",
@@ -344,11 +344,12 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1024,
-        1040
+        832,
+        976
       ],
       "id": "cf6b8a0d-9fe9-4c79-b90e-eb38eefae49d",
       "name": "Upload Featured Image",
+      "retryOnFail": false,
       "credentials": {
         "wordpressApi": {
           "id": "lzcpahZm5AzNKxIn",
@@ -379,8 +380,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        848,
-        768
+        816,
+        704
       ],
       "id": "9dda301d-d96a-4b29-871d-daf7155fc355",
       "name": "Add Metadata",
@@ -398,7 +399,7 @@
             {
               "id": "7f4c5019-2ff3-49d9-8f45-5e93f49bc236",
               "name": "social_text",
-              "value": "={{ \"Tocmai am publicat: \" + $('Create a post').item.json.title.raw + \"\\n\\n\" + $('Extract NotionDoc Properties').item.json.social_hook + \"\\n\\nCiteste pe: \" + $('Create a post').item.json.link }}\n",
+              "value": "={{ \"Tocmai am publicat: \" + \n$('Create a post').item.json.title.raw + \"\\n\\n\" + \n$('Extract NotionDoc Properties').item.json.social_hook + \"\\n\\nCiteste pe: \" + \n$('Create a post').item.json.link }}\n",
               "type": "string"
             }
           ]
@@ -408,8 +409,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1472,
-        1040
+        1360,
+        976
       ],
       "id": "7e77fd83-ddd1-4d93-be5d-7ac3607b364b",
       "name": "Prepare Social Text"
@@ -423,8 +424,8 @@
       "type": "n8n-nodes-base.markdown",
       "typeVersion": 1,
       "position": [
-        3408,
-        272
+        2960,
+        592
       ],
       "id": "eb78ba66-1354-4dab-92c1-f4f7bad7803d",
       "name": "Convert Markdown to HTML"
@@ -434,12 +435,16 @@
         "httpRequestMethod": "POST",
         "graphApiVersion": "v23.0",
         "node": "=me",
-        "edge": "feed",
+        "edge": "photos",
         "options": {
           "queryParameters": {
             "parameter": [
               {
-                "name": "message",
+                "name": "url",
+                "value": "={{ $('Upload Featured Image').item.json.source_url }}"
+              },
+              {
+                "name": "caption",
                 "value": "={{ $json.social_text }}"
               }
             ]
@@ -449,8 +454,8 @@
       "type": "n8n-nodes-base.facebookGraphApi",
       "typeVersion": 1,
       "position": [
-        1680,
-        1040
+        1584,
+        976
       ],
       "id": "ca0c1eec-d68f-4f36-8749-edf58edee89f",
       "name": "Facebook Graph API",
@@ -458,45 +463,6 @@
         "facebookGraphApi": {
           "id": "5lP0VpFRJ1ok0kka",
           "name": "Facebook Graph account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/media'}}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "wordpressApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Disposition",
-              "value": "=attachment; filename=\"featured_image_{{ $('Notion Trigger').item.json.id }}.jpg\""
-            },
-            {
-              "name": "Content-Type",
-              "value": "image/png"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "binaryData",
-        "inputDataFieldName": "data",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1024,
-        1248
-      ],
-      "id": "07f34a9f-c44d-4356-8eab-d6a80e3957a0",
-      "name": "Upload photo on WP",
-      "credentials": {
-        "wordpressApi": {
-          "id": "lzcpahZm5AzNKxIn",
-          "name": "Wordpress account"
         }
       }
     },
@@ -514,135 +480,54 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2544,
-        128
+        2192,
+        304
       ],
       "id": "18700ac8-7d1a-4393-b51a-dfe17f23bc8e",
       "name": "Copy the Image"
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "={{'https://www.dorustoica.ro/wp-json/wp/v2/posts/' + $('Create a post').item.json.id}}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "wordpressApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"featured_media\": \"{{ $('Upload photo on WP').item.json.id }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1232,
-        1248
-      ],
-      "id": "ad579134-3e37-444b-b5ca-711189f9f0c8",
-      "name": "Set Featured Image1",
-      "credentials": {
-        "wordpressApi": {
-          "id": "lzcpahZm5AzNKxIn",
-          "name": "Wordpress account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "content": "## Upload the picture in WP",
-        "height": 464,
-        "width": 624
+        "height": 288,
+        "width": 544
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        752,
-        960
+        736,
+        880
       ],
       "id": "728e6d67-5baf-41d9-b297-10192f308c16",
       "name": "Sticky Note"
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "7f4c5019-2ff3-49d9-8f45-5e93f49bc236",
-              "name": "social_text",
-              "value": "={{ \"Tocmai am publicat: \" + $('Create a post').item.json.title.raw + \"\\n\\n\" + $('Extract NotionDoc Properties').item.json.social_hook + \"\\n\\nCiteste pe: \" + $('Create a post').item.json.link }}\n",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1472,
-        1248
-      ],
-      "id": "6f7219b2-4e30-40f9-9b77-f4ef0b9aa783",
-      "name": "Prepare Social Text1"
-    },
-    {
-      "parameters": {
-        "httpRequestMethod": "POST",
-        "graphApiVersion": "v23.0",
-        "node": "=me",
-        "edge": "feed",
-        "options": {
-          "queryParameters": {
-            "parameter": [
-              {
-                "name": "message",
-                "value": "={{ $json.social_text }}"
-              }
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.facebookGraphApi",
-      "typeVersion": 1,
-      "position": [
-        1680,
-        1248
-      ],
-      "id": "abbfba3d-316e-403f-9778-66d98c8ed5a9",
-      "name": "Facebook Graph API1",
-      "credentials": {
-        "facebookGraphApi": {
-          "id": "5lP0VpFRJ1ok0kka",
-          "name": "Facebook Graph account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "## Upload the social hook to facebook",
-        "height": 464,
-        "width": 720
+        "content": "## Upload the social hook and image to facebook",
+        "height": 288,
+        "width": 672
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1408,
-        960
+        1312,
+        880
       ],
       "id": "371063d4-f92b-4717-985f-833208da259a",
       "name": "Sticky Note1"
     },
     {
       "parameters": {
-        "content": "## Append metadata to WP\n- add meta description\n- add focus keywords\n\nYOAST sau Rank Math API not working.\n\nFind a fix or work around.\n",
+        "content": "## Append metadata to WP\n- add meta description\n- add focus keywords\n- to be connected to WP create a post\n\nYOAST sau Rank Math API not working.\n\nFind a fix or work around.\n",
         "height": 352,
-        "width": 624,
+        "width": 544,
         "color": 3
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        752,
-        576
+        736,
+        496
       ],
       "id": "bf65cb21-2f8b-4e7c-87d1-4c05032c8a14",
       "name": "Sticky Note2"
@@ -650,8 +535,8 @@
     {
       "parameters": {
         "content": "## Update Wordpress",
-        "height": 1040,
-        "width": 816
+        "height": 784,
+        "width": 800
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -752,14 +637,14 @@
     {
       "parameters": {
         "content": "## Send the article to Email\n- Add condition in Notion if the user want to review in email.",
-        "height": 288,
+        "height": 272,
         "width": 496
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3328,
-        176
+        2912,
+        496
       ],
       "id": "26dd2de5-4479-4b9d-8081-3ec0c5fd629a",
       "name": "Sticky Note4"
@@ -853,6 +738,29 @@
                 ],
                 "combinator": "and"
               }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f3a676f1-8d16-4ebd-96c6-45ccc1c0190a",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
             }
           ]
         },
@@ -861,8 +769,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.3,
       "position": [
-        2608,
-        1136
+        1360,
+        672
       ],
       "id": "7cfe299f-2ada-4109-873a-1113766b4368",
       "name": "Publisher router"
@@ -874,8 +782,8 @@
       "type": "n8n-nodes-base.twitter",
       "typeVersion": 2,
       "position": [
-        2832,
-        1024
+        1792,
+        528
       ],
       "id": "0f3c4b77-7a66-44b8-b2dc-ba765abaa807",
       "name": "Create Tweet"
@@ -887,24 +795,24 @@
       "type": "n8n-nodes-base.linkedIn",
       "typeVersion": 1,
       "position": [
-        2832,
-        1216
+        1792,
+        688
       ],
       "id": "496c7558-53d9-4814-ba67-1f574db4273c",
       "name": "Create a LinkedIn post"
     },
     {
       "parameters": {
-        "content": "## TO DO\n- put content to more social media",
-        "height": 464,
-        "width": 480,
+        "content": "## TO DO\n- put content to more social media platforms",
+        "height": 352,
+        "width": 672,
         "color": 7
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        2576,
-        944
+        1312,
+        496
       ],
       "id": "27d9f540-d43c-450c-a6ec-f251371c53e9",
       "name": "Sticky Note6"
@@ -912,15 +820,15 @@
     {
       "parameters": {
         "content": "## TO DO for video content long\n- create script for video\n- create shot list for video\n- share on YouTube or other long video content",
-        "height": 208,
+        "height": 256,
         "width": 480,
         "color": 7
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3088,
-        944
+        2048,
+        592
       ],
       "id": "dacd19b6-84e4-4710-909e-bf1f18bb5e58",
       "name": "Sticky Note7"
@@ -928,54 +836,38 @@
     {
       "parameters": {
         "content": "## TO DO for video content shorts\n- create shorts from the long video\n- share on TikTok or other shorts video platforms",
-        "height": 224,
+        "height": 272,
         "width": 480,
         "color": 7
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3088,
-        1184
+        2048,
+        880
       ],
       "id": "5d6cdec3-bdf0-4ce9-ba13-55a802aa7dda",
       "name": "Sticky Note9"
     },
     {
       "parameters": {
-        "content": "## TO DO\n- **Add to do list**",
-        "height": 144,
-        "width": 352,
+        "content": "# TO DO\n",
+        "height": 672,
+        "width": 544,
         "color": 6
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        2896,
-        768
+        2016,
+        496
       ],
       "id": "e125e37e-74de-498d-8d2a-8b55c340356f",
       "name": "Sticky Note8"
     },
     {
       "parameters": {
-        "content": "## Missing image from the social post\n- to be added",
-        "height": 144,
-        "width": 480,
-        "color": 3
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        1408,
-        784
-      ],
-      "id": "82cd6026-5df4-4c56-b515-35ac24afb6ec",
-      "name": "Sticky Note10"
-    },
-    {
-      "parameters": {
-        "jsCode": "const blocks = $json.blocks;\n\n// Funcție recursivă pentru a extrage textul din blocuri, inclusiv cele imbricate\nconst extractTextFromBlocks = (blockArray) => {\n  return blockArray.map(block => {\n    // Definirea variabilei blockType ESTE NECESARĂ ÎN ACEST SCOPE (la fiecare iterație)\n    const blockType = block.type; \n    let plainText = '';\n\n    // Extrage textul din blocurile cu proprietatea 'text'\n    if (block[blockType] && block[blockType].text && block[blockType].text.length > 0) {\n      plainText = block[blockType].text.map(item => item.plain_text).join('');\n    }\n\n    // Procesează blocurile 'to_do' și 'toggle'\n    if (block.type === 'to_do' && block.to_do.text) {\n        plainText = block.to_do.text.map(item => item.plain_text).join('');\n    } else if (block.type === 'toggle' && block.toggle.text) {\n        plainText = block.toggle.text.map(item => item.plain_text).join('');\n    }\n\n    // Verifică blocurile copil pentru conținut imbricat\n    let childText = '';\n    if (block[blockType] && block[blockType].children && block[blockType].children.length > 0) {\n      childText = extractTextFromBlocks(block[blockType].children).join('\\n\\n');\n    }\n\n    // Formatează textul extras și îl returnează (ACUM CU MARCATORI MARKDOWN PENTRU LISTE)\n    switch (blockType) {\n      case 'heading_1':\n        return `# ${plainText}\\n${childText}`;\n      case 'heading_2':\n        return `## ${plainText}\\n${childText}`;\n      case 'heading_3':\n        return `### ${plainText}\\n${childText}`;\n      case 'bulleted_list_item':\n        return `* ${plainText}\\n${childText}`; // Bullet point\n      case 'numbered_list_item':\n        return `1. ${plainText}\\n${childText}`; // Listă numerotată\n      case 'paragraph':\n        return `${plainText}\\n${childText}`;\n      case 'callout':\n      case 'quote':\n        return `> ${plainText}\\n${childText}`; // Blockquote\n      case 'to_do':\n        const isChecked = block.to_do.checked;\n        const todoMarker = isChecked ? '- [x] ' : '- [ ] ';\n        return `${todoMarker}${plainText}\\n${childText}`;\n      case 'toggle':\n        return `${plainText}\\n${childText}`;\n      case 'divider':\n        return '---';\n      case 'image':\n        return '[imagine]';\n      case 'child_page':\n        return `[link către pagina copil: ${plainText}]`;\n      default:\n        console.warn(`Tip de bloc neprocesat: ${blockType}`);\n        return '';\n    }\n  }).filter(Boolean).join('\\n\\n');\n};\n\nconst textContent = extractTextFromBlocks(blocks);\n\nreturn [\n  {\n    json: {\n      content: textContent,\n    }\n  }\n];"
+        "jsCode": "const blocks = $json.blocks;\nlet featuredImageUrl = ''; // Variabila pentru a stoca URL-ul primei imagini\n\n// Funcție recursivă pentru a extrage textul din blocuri, inclusiv cele imbricate\nconst extractTextFromBlocks = (blockArray) => {\n  return blockArray.map(block => {\n    const blockType = block.type; \n    let plainText = '';\n\n    // Extrage URL-ul imaginii (doar la primul bloc 'image' întâlnit)\n    if (blockType === 'image' && !featuredImageUrl) {\n        const image = block.image;\n        if (image.type === 'file') {\n            // URL-ul temporar al fișierului încărcat pe Notion\n            featuredImageUrl = image.file.url;\n        } else if (image.type === 'external') {\n            // URL-ul extern al imaginii\n            featuredImageUrl = image.external.url;\n        }\n        // Nu mai procesăm acest bloc ca text, doar extragem URL-ul.\n        return ''; \n    }\n    \n    // Extrage textul din blocurile cu proprietatea 'text'\n    if (block[blockType] && block[blockType].text && block[blockType].text.length > 0) {\n      plainText = block[blockType].text.map(item => item.plain_text).join('');\n    }\n\n    // Procesează blocurile 'to_do' și 'toggle' (logica existentă)\n    if (block.type === 'to_do' && block.to_do.text) {\n        plainText = block.to_do.text.map(item => item.plain_text).join('');\n    } else if (block.type === 'toggle' && block.toggle.text) {\n        plainText = block.toggle.text.map(item => item.plain_text).join('');\n    }\n    \n    // Verifică blocurile copil pentru conținut imbricat\n    let childText = '';\n    if (block[blockType] && block[blockType].children && block[blockType].children.length > 0) {\n      // Reapelează funcția pentru a continua căutarea URL-ului în blocurile copil\n      childText = extractTextFromBlocks(block[blockType].children).join('\\n\\n');\n    }\n\n    // Formatează textul extras în Markdown\n    switch (blockType) {\n      case 'heading_1':\n        return `# ${plainText}\\n${childText}`;\n      case 'heading_2':\n        return `## ${plainText}\\n${childText}`;\n      case 'heading_3':\n        return `### ${plainText}\\n${childText}`;\n      case 'bulleted_list_item':\n        return `* ${plainText}\\n${childText}`;\n      case 'numbered_list_item':\n        return `1. ${plainText}\\n${childText}`;\n      case 'paragraph':\n        return `${plainText}\\n${childText}`;\n      case 'callout':\n      case 'quote':\n        return `> ${plainText}\\n${childText}`;\n      case 'to_do':\n        const isChecked = block.to_do.checked;\n        const todoMarker = isChecked ? '- [x] ' : '- [ ] ';\n        return `${todoMarker}${plainText}\\n${childText}`;\n      case 'toggle':\n        return `${plainText}\\n${childText}`;\n      case 'divider':\n        return '---';\n      case 'child_page':\n        return `[link către pagina copil: ${plainText}]`;\n      default:\n        console.warn(`Tip de bloc neprocesat: ${blockType}`);\n        return '';\n    }\n  }).filter(Boolean).join('\\n\\n');\n};\n\nconst textContent = extractTextFromBlocks(blocks);\n\n// ATENȚIE: URL-ul imaginii este returnat în JSON-ul de ieșire\nreturn [\n  {\n    json: {\n      content: textContent,\n      featured_image_url: featuredImageUrl // Adaugă URL-ul imaginii\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1028,7 +920,7 @@
       "typeVersion": 3.4,
       "position": [
         0,
-        960
+        976
       ],
       "id": "cb9e4644-6ebc-48f1-bda4-769052cb686d",
       "name": "Prepare article"
@@ -1095,7 +987,7 @@
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
       "position": [
-        3088,
+        3200,
         304
       ],
       "id": "bed49dbc-b4e2-4d77-ae2b-664961cbfdeb",
@@ -1129,8 +1021,8 @@
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
       "position": [
-        1936,
-        1136
+        1792,
+        976
       ],
       "id": "c8565197-b14f-46c7-b30d-8783bb2e991f",
       "name": "Published",
@@ -1143,7 +1035,7 @@
     },
     {
       "parameters": {
-        "content": "## Receive the data from Notion",
+        "content": "## Receive data from Notion",
         "height": 368,
         "width": 1040
       },
@@ -1159,7 +1051,7 @@
     {
       "parameters": {
         "content": "## The Copyrighter",
-        "height": 368,
+        "height": 480,
         "width": 304
       },
       "type": "n8n-nodes-base.stickyNote",
@@ -1200,7 +1092,7 @@
       "typeVersion": 2.2,
       "position": [
         1904,
-        64
+        176
       ],
       "id": "af2c92f9-2137-40db-8c19-45c3ae28f8fd",
       "name": "Article needs a Image?"
@@ -1231,8 +1123,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2544,
-        288
+        2672,
+        304
       ],
       "id": "c4661997-d285-4507-a692-a3bcd083edf3",
       "name": "1. Create File Upload Object",
@@ -1255,6 +1147,10 @@
             {
               "name": "Notion-Version",
               "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "multipart/form-data"
             }
           ]
         },
@@ -1264,8 +1160,8 @@
           "parameters": [
             {
               "parameterType": "formBinaryData",
-              "name": "=file",
-              "inputDataFieldName": "={{ $json.fileName }}"
+              "name": "file",
+              "inputDataFieldName": "=image"
             }
           ]
         },
@@ -1274,7 +1170,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3088,
+        3200,
         64
       ],
       "id": "fd0879c4-d8da-47bb-8db9-ce177ae29fe1",
@@ -1289,13 +1185,13 @@
     {
       "parameters": {
         "mode": "combine",
-        "combineBy": "combineAll",
+        "combineBy": "combineByPosition",
         "options": {}
       },
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        2880,
+        2960,
         64
       ],
       "id": "d61c676c-0aba-413e-8460-c6dabb5653bb",
@@ -1328,7 +1224,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2896,
+        2960,
         304
       ],
       "id": "d3c30a4f-1daa-41b1-a35f-bc3dc934bad6",
@@ -1342,123 +1238,7 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $json.upload_url }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "parameterType": "formBinaryData",
-              "name": "=file",
-              "inputDataFieldName": "={{ $json.fileName }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        3360,
-        752
-      ],
-      "id": "b49669de-0ebd-412c-8a2b-9a6eb1e99c09",
-      "name": "2. Send File Content (Binary)2",
-      "credentials": {
-        "notionApi": {
-          "id": "JEBP9PCcAl6KPP6D",
-          "name": "Notion to Blogsport"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "=https://api.notion.com/v1/blocks/{{ $('Notion Trigger').item.json.id }}/children",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"children\": [\n    {\n      \"type\": \"image\",\n      \"image\": {\n        \"type\": \"file_upload\",\n        \"file_upload\": {\n          \"id\": \"{{ $json.id }}\"\n        }\n      }\n    }\n  ]\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        3584,
-        752
-      ],
-      "id": "3d0d22bc-4e52-40e3-a5b8-e6894cab098f",
-      "name": "Attach image to doc2",
-      "credentials": {
-        "notionApi": {
-          "id": "JEBP9PCcAl6KPP6D",
-          "name": "Notion to Blogsport"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "databasePage",
-        "operation": "update",
-        "pageId": {
-          "__rl": true,
-          "value": "={{ $('Notion Trigger').item.json.id }}",
-          "mode": "id"
-        },
-        "propertiesUi": {
-          "propertyValues": [
-            {
-              "key": "Status|select",
-              "selectValue": "Ready for Review"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.notion",
-      "typeVersion": 2.2,
-      "position": [
-        2160,
-        304
-      ],
-      "id": "6e6cda72-e0ef-48e0-a839-200fd5f00571",
-      "name": "Ready for Review1",
-      "credentials": {
-        "notionApi": {
-          "id": "JEBP9PCcAl6KPP6D",
-          "name": "Notion to Blogsport"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "## Send the updates to the database",
+        "content": "## Updates Notion Properties",
         "height": 480,
         "width": 480
       },
@@ -1473,9 +1253,9 @@
     },
     {
       "parameters": {
-        "content": "## Generate the image and put the status ready for review",
+        "content": "## Generate or Copy the image",
         "height": 480,
-        "width": 1472
+        "width": 736
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -1485,6 +1265,63 @@
       ],
       "id": "e11a0819-2c7e-4c7d-b180-e29f9d621e17",
       "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Extract Content for WP').item.json.featured_image_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        976
+      ],
+      "id": "454720eb-4548-4d58-9ff9-7f92e248b8d1",
+      "name": "download image"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Redenumește câmpul binar \"data\" -> \"image\"\nitem.binary = item.binary || {};\n\nif (item.binary.data) {\n  item.binary.image = item.binary.data;\n  delete item.binary.data;\n}\n\nreturn item;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        48
+      ],
+      "id": "7e7a65be-e13f-44fe-8bec-277421ede978",
+      "name": "Generated Binary Data to Image"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Redenumește câmpul binar \"data\" -> \"image\"\nitem.binary = item.binary || {};\n\nif (item.binary.data) {\n  item.binary.image = item.binary.data;\n  delete item.binary.data;\n}\n\nreturn item;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        304
+      ],
+      "id": "6c075d48-892e-4b62-96a0-64130ac5e5d6",
+      "name": "Copied Binary Data to Image"
+    },
+    {
+      "parameters": {
+        "content": "## Upload the image back in Notion\n- add image to the Notion document\n- change the status ready for review",
+        "height": 480,
+        "width": 816
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2592,
+        -16
+      ],
+      "id": "b142ddfb-ba5e-4e2e-9215-c910f2e7d836",
+      "name": "Sticky Note15"
     }
   ],
   "pinData": {
@@ -1590,7 +1427,7 @@
       "main": [
         [
           {
-            "node": "Add Metadata",
+            "node": "download image",
             "type": "main",
             "index": 0
           }
@@ -1601,12 +1438,7 @@
       "main": [
         [
           {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "1. Create File Upload Object",
+            "node": "Generated Binary Data to Image",
             "type": "main",
             "index": 0
           }
@@ -1664,36 +1496,9 @@
     },
     "Copy the Image": {
       "main": [
-        []
-      ]
-    },
-    "Upload photo on WP": {
-      "main": [
         [
           {
-            "node": "Set Featured Image1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Featured Image1": {
-      "main": [
-        [
-          {
-            "node": "Prepare Social Text1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Social Text1": {
-      "main": [
-        [
-          {
-            "node": "Facebook Graph API1",
+            "node": "Copied Binary Data to Image",
             "type": "main",
             "index": 0
           }
@@ -1803,7 +1608,8 @@
             "type": "main",
             "index": 0
           }
-        ]
+        ],
+        []
       ]
     },
     "Extract Content for WP": {
@@ -1822,17 +1628,6 @@
         [
           {
             "node": "Create a post",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Facebook Graph API1": {
-      "main": [
-        [
-          {
-            "node": "Published",
             "type": "main",
             "index": 0
           }
@@ -1872,7 +1667,7 @@
         ],
         [
           {
-            "node": "Ready for Review1",
+            "node": "Copy the Image",
             "type": "main",
             "index": 0
           }
@@ -1912,22 +1707,54 @@
         ]
       ]
     },
-    "2. Send File Content (Binary)2": {
+    "Attach image to doc": {
       "main": [
         [
           {
-            "node": "Attach image to doc2",
+            "node": "Ready for Review",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Attach image to doc": {
+    "download image": {
       "main": [
         [
           {
-            "node": "Ready for Review",
+            "node": "Upload Featured Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generated Binary Data to Image": {
+      "main": [
+        [
+          {
+            "node": "1. Create File Upload Object",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copied Binary Data to Image": {
+      "main": [
+        [
+          {
+            "node": "1. Create File Upload Object",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
             "type": "main",
             "index": 0
           }
@@ -1939,7 +1766,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "b31c6442-e841-4e7a-98c6-5748cde160fa",
+  "versionId": "eaabf31b-02d5-4ab8-ae5a-ed0402b4b86c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5870fe1a67cc41128053003fe543e22c169dc78f349742803fde6379f61a6c2e"
