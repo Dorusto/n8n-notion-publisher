@@ -1,0 +1,4 @@
+# Ingore n8n log and cache
+*.log
+.cache/
+node_modules/
